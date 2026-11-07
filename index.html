@@ -759,6 +759,10 @@ function renderAccount(){
     box.style.display='block';form.style.display='none';
     $('#accToggle').style.display='none';
     const g=$('#gateBox');if(g)g.style.display='none';
+    // o formulário fica com os dados de quem está com a sessão iniciada
+    const fn=$('#fName'),fe=$('#fEmail');
+    if(fn&&u.name)fn.value=u.name;
+    if(fe&&u.email)fe.value=u.email;
     box.innerHTML='<p>Olá, <b>'+esc(u.name)+'</b> ('+esc(u.email)+')'+(u.admin?' · <span class="badge paid">Gerência</span>':'')+'</p>'
       +'<div class="row" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">'
       +'<button class="btn-dark" onclick="openChat()">Abrir o chat</button>'
