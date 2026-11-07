@@ -586,7 +586,7 @@ main{padding-top:0}
       <form id="accForm" onsubmit="return doAuth(event)" style="margin-top:24px">
         <div class="field"><label for="aName">O teu nome</label><input type="text" id="aName" required></div>
         <div class="field"><label for="aEmail">Email</label><input type="email" id="aEmail" required></div>
-        <div class="field"><label for="aPass">Palavra-passe</label><input type="text" id="aPass" required minlength="4" autocomplete="new-password"></div>
+        <div class="field"><label for="aPass">Palavra-passe</label><input type="password" id="aPass" required minlength="4" autocomplete="new-password"></div>
         <button class="btn-dark" type="submit" id="accBtn" style="width:100%;margin-top:20px">Criar conta</button>
       </form>
       <p style="margin-top:16px;text-align:center"><button class="linklike" id="accToggle" onclick="toggleAuth()">Já tenho conta — entrar</button></p>
@@ -643,7 +643,7 @@ function uid(p){return p+'-'+Date.now().toString(36).toUpperCase().slice(-6)}
 const DEFAULT_DESIGNS=[
   {id:'classico',name:'Clássico',desc:'Branco e dourado, letra serifada',price:2500,photo:'https://images.pexels.com/photos/11503512/pexels-photo-11503512.jpeg?auto=compress&cs=tinysrgb&w=1200'},
   {id:'floral',name:'Floral',desc:'Flores e caligrafia dourada',price:2900,photo:'https://images.pexels.com/photos/19906660/pexels-photo-19906660.jpeg?auto=compress&cs=tinysrgb&w=1200'},
-  {id:'minimalista',name:'Minimalista',desc:'Só o essencial, em cinzento e branco',price:2500,photo:'https://images.pexels.com/photos/4207708/pexels-photo-4207708.jpeg?auto=compress&cs=tinysrgb&w=1200'},
+  {id:'minimalista',name:'Minimalista',desc:'Só o essencial',price:2500,photo:'https://images.pexels.com/photos/4207708/pexels-photo-4207708.jpeg?auto=compress&cs=tinysrgb&w=1200'},
   {id:'dourado',name:'Dourado',desc:'Dourado sobre papel creme',price:3400,photo:'https://images.pexels.com/photos/7012252/pexels-photo-7012252.jpeg?auto=compress&cs=tinysrgb&w=1200'},
   {id:'salvia',name:'Verde Sálvia',desc:'Verde suave com branco',price:2900,photo:'https://images.pexels.com/photos/37012613/pexels-photo-37012613.jpeg?auto=compress&cs=tinysrgb&w=1200'},
   {id:'terracota',name:'Terracota',desc:'Terracota e bege, tons quentes',price:2900,photo:'https://images.pexels.com/photos/7319228/pexels-photo-7319228.jpeg?auto=compress&cs=tinysrgb&w=1200'}
@@ -713,6 +713,10 @@ function pickPhoto(inp){
 function validPhone(p){const d=String(p||'').replace(/\D/g,'');return /^(84|85|86|87)\d{7}$/.test(d)}
 function submitOrder(ev){
   ev.preventDefault();
+  if(submitOrder._busy){toast('O teu pedido já está a ser enviado…');return false}
+  submitOrder._busy=true;
+  const btn=ev.target.querySelector('.btn-send');if(btn)btn.disabled=true;
+  setTimeout(()=>{submitOrder._busy=false;if(btn)btn.disabled=false},4000);
   const u=me();
   if(!u){$('#gateBox').style.display='block';$('#gateBox').scrollIntoView({behavior:'smooth',block:'center'});toast('Cria primeiro a tua conta.');return false}
   const d=designs.find(x=>x.id===selDesign)||designs[0];
@@ -723,9 +727,12 @@ function submitOrder(ev){
   if(!name||!partner||!email||!phone){toast('Preenche os teus dados.');return false}
   if(!validPhone(phone)){toast('O telefone tem de começar por 84, 85, 86 ou 87 e ter 9 dígitos.');return false}
   const total=calcTotal();
+  // anti-duplicado: o mesmo pedido (mesmo cliente, modelo, formato, total, nomes) nos últimos 60s não cria outro
+  const dup=orders.find(o=>o.email===u.email&&o.design===d.name&&o.format===f&&o.qty===q&&o.total===total&&o.name===name&&o.partner===partner&&(Date.now()-(o.ts||0))<60000);
+  if(dup){toast('O teu pedido '+dup.id+' já foi enviado.');$('#receiptBox').scrollIntoView({behavior:'smooth',block:'center'});return false}
   const o={id:uid('SIM'),email:u.email,name,partner,design:d.name,designPrice:d.price,format:f,qty:q,date,
     msg:$('#fMsg').value.trim(),notes:$('#fNotes').value.trim(),photo:photoData,total,status:'aguarda pagamento',
-    created:new Date().toLocaleString('pt-PT')};
+    ts:Date.now(),created:new Date().toLocaleString('pt-PT')};
   orders.unshift(o);store.set('orders',orders);
   // mensagem automática no chat
   const key=u.email;
@@ -750,12 +757,14 @@ function renderAccount(){
   const u=me();const box=$('#accLogged');const form=$('#accForm');
   if(u){
     box.style.display='block';form.style.display='none';
+    $('#accToggle').style.display='none';
+    const g=$('#gateBox');if(g)g.style.display='none';
     box.innerHTML='<p>Olá, <b>'+esc(u.name)+'</b> ('+esc(u.email)+')'+(u.admin?' · <span class="badge paid">Gerência</span>':'')+'</p>'
       +'<div class="row" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">'
       +'<button class="btn-dark" onclick="openChat()">Abrir o chat</button>'
       +(u.admin?'<button class="btn-light" onclick="go(\'admin\')">Gerência</button>':'')
       +'<button class="btn-ghost" onclick="logout()">Sair</button></div>';
-  }else{box.style.display='none';form.style.display='block'}
+  }else{box.style.display='none';form.style.display='block';$('#accToggle').style.display='inline'}
 }
 async function doAuth(ev){
   ev.preventDefault();
@@ -801,13 +810,13 @@ function renderChat(){
     d.appendChild(t);body.appendChild(d);
   });
   body.scrollTop=body.scrollHeight;
-  // marcar como visto quando a gerência lê
-  if(isAdmin()&&chatPeer){list.forEach(m=>{if(m.from==='me')m.seen=true});store.set('chats',chats)}
+  // marcar como visto quando a gerência lê a conversa DE OUTRO cliente
+  if(isAdmin()&&chatPeer&&chatPeer!==me().email){list.forEach(m=>{if(m.from==='me')m.seen=true});store.set('chats',chats)}
 }
 function sendChat(){
   const inp=$('#chatText');const t=inp.value.trim();if(!t)return;
   const key=chatPeer||(me()&&me().email);if(!key)return;
-  (chats[key]=chats[key]||[]).push({from:isAdmin()&&chatPeer?'shop':'me',text:t,time:nowT(),seen:false});
+  (chats[key]=chats[key]||[]).push({from:(isAdmin()&&chatPeer&&chatPeer!==me().email)?'shop':'me',text:t,time:nowT(),seen:false});
   store.set('chats',chats);inp.value='';renderChat();
 }
 function chatAttach(inp){
@@ -816,7 +825,7 @@ function chatAttach(inp){
   const key=chatPeer||(me()&&me().email);
   const r=new FileReader();
   r.onload=()=>{
-    const m={from:isAdmin()&&chatPeer?'shop':'me',time:nowT(),seen:false};
+    const m={from:(isAdmin()&&chatPeer&&chatPeer!==me().email)?'shop':'me',time:nowT(),seen:false};
     if(f.type.indexOf('image')===0)m.img=r.result;else if(f.type.indexOf('audio')===0)m.audio=r.result;else{m.text='Ficheiro: '+f.name}
     (chats[key]=chats[key]||[]).push(m);store.set('chats',chats);renderChat();toast('Anexo enviado.');
   };
