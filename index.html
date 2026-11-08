@@ -501,7 +501,7 @@ main{padding-top:0}
       <div class="form-box">
         <p class="eyebrow">O teu pedido</p>
         <h2 class="sec-title">Pede o teu <span class="scr">convite</span></h2>
-        <p class="form-note">Envia o teu pedido até <b>30 dias antes do casamento</b>. Podes rever e mudar depois de enviar — falamos contigo no chat.</p>
+        <p class="form-note">Envia o teu pedido até <b id="deadlineNote">30 dias antes do casamento</b>. Podes rever e mudar depois de enviar — falamos contigo no chat.</p>
 
         <div id="gateBox" class="gate" style="display:none">
           <p>Para enviares o teu pedido, cria primeiro a tua conta — é grátis e demora um minuto.</p>
@@ -528,7 +528,7 @@ main{padding-top:0}
             </div>
             <div class="field">
               <label for="fDate">Data do casamento</label>
-              <input type="date" id="fDate">
+              <input type="date" id="fDate" required>
             </div>
           </div>
 
@@ -698,7 +698,7 @@ function go(v){
   if(v==='conta')renderAccount();
   if(v==='admin')renderAdmin();
   window.scrollTo(0,0);
-  if(v!=='home')history.replaceState(null,'','#'+v); else history.replaceState(null,'',' ');
+  if(v!=='home')history.replaceState(null,'','#'+v); else history.replaceState(null,'',location.pathname);
 }
 
 /* ---------- formulário de pedido ---------- */
@@ -720,9 +720,9 @@ function calcTotal(){
   if(f!=='digital'){
     qtyBox.style.display='block';
     let q=parseInt($('#fQty').value||'0',10);
-    if(isNaN(q)||q<settings.minQty)q=settings.minQty;
+    if(isNaN(q)||q<0)q=0;
     total=d.price+q*settings.printPrice;
-    note=q+' unidades impressas · aguarda pagamento';
+    note=q+' unidades impressas'+(q<settings.minQty?' · mín. '+settings.minQty+' un.':'')+' · aguarda pagamento';
   }else qtyBox.style.display='none';
   $('#totalVal').textContent=fmt(total);
   $('#totalNote').textContent=note;
@@ -748,6 +748,7 @@ function submitOrder(ev){
   const f=$('#fFormat').value;
   let q=0;if(f!=='digital'){q=parseInt($('#fQty').value||'0',10);if(isNaN(q)||q<settings.minQty){toast('Quantidade mínima: '+settings.minQty+' unidades.');return false}}
   const date=$('#fDate').value;
+  if(!date){toast('Escolhe a data do casamento.');return false}
   const name=$('#fName').value.trim(),partner=$('#fPartner').value.trim(),email=$('#fEmail').value.trim(),phone=$('#fPhone').value.trim();
   if(!name||!partner||!email||!phone){toast('Preenche os teus dados.');return false}
   if(!validPhone(phone)){toast('O telefone tem de começar por 84, 85, 86 ou 87 e ter 9 dígitos.');return false}
@@ -879,14 +880,17 @@ function renderAdmin(){
       :'<div class="card"><p>Ainda não há pedidos.</p></div>';
   }
   if(adminTab==='modelos'){
-    h+=designs.map(d=>'<div class="card"><h4>'+esc(d.name)+' — '+fmt(d.price)+'</h4><p class="meta">'+esc(d.desc)+'</p>'
+    h+=designs.map(d=>'<div class="card"><h4>'+esc(d.name)+' — '+fmt(d.price)+'</h4>'
       +'<div class="row"><label class="btn-light" style="cursor:pointer">Trocar foto<input type="file" accept="image/*" style="display:none" onchange="designPhoto(\''+d.id+'\',this)"></label>'
-      +'<input type="text" value="'+esc(d.name)+'" onchange="designEdit(\''+d.id+'\',\'name\',this.value)" style="background:var(--panel);border:0;padding:10px 12px;min-width:140px">'
-      +'<input type="number" value="'+d.price+'" onchange="designEdit(\''+d.id+'\',\'price\',parseInt(this.value||0,10))" style="background:var(--panel);border:0;padding:10px 12px;width:120px">'
+      +'<input type="text" value="'+esc(d.name)+'" onchange="designEdit(\''+d.id+'\',\'name\',this.value)" style="background:var(--panel);border:0;padding:10px 12px;min-width:140px" title="Nome do modelo">'
+      +'<input type="number" value="'+d.price+'" onchange="designEdit(\''+d.id+'\',\'price\',parseInt(this.value||0,10))" style="background:var(--panel);border:0;padding:10px 12px;width:120px" title="Preço em MT">'
       +'<span style="font-size:13px;color:var(--mut)">MT · a partir de</span></div>'
+      +'<div class="field" style="margin-top:10px"><input type="text" value="'+esc(d.desc)+'" onchange="designEdit(\''+d.id+'\',\'desc\',this.value)" placeholder="Descrição do modelo" style="width:100%"></div>'
       +(d.photo?'<p style="margin-top:10px"><img src="'+d.photo+'" style="max-width:220px;aspect-ratio:4/3;object-fit:cover" alt=""></p>':'')
+      +'<div class="row" style="margin-top:10px"><button class="btn-ghost" onclick="delDesign(\''+d.id+'\')">Apagar modelo</button></div>'
       +'</div>').join('')
-      +'<p style="color:var(--mut);font-size:14px">Os preços e as fotos mudam aqui e aparecem logo no formulário do site.</p>';
+      +'<div class="row" style="margin-top:16px"><button class="btn-dark" onclick="newDesign()">＋ Novo modelo</button></div>'
+      +'<p style="color:var(--mut);font-size:14px">Os preços, as descrições e as fotos mudam aqui e aparecem logo no formulário do site.</p>';
   }
   if(adminTab==='clientes'){
     h+=users.length?users.map(x=>'<div class="card"><h4>'+esc(x.name)+(x.admin?' · Gerência':'')+'</h4><p class="meta">'+esc(x.email)+' · desde '+esc(x.created||'—')+'</p><div class="row"><button class="btn-ghost" onclick="openChat(\''+esc(x.email)+'\')">Chat</button></div></div>').join(''):'<div class="card"><p>Ainda não há clientes.</p></div>';
@@ -902,11 +906,25 @@ function renderAdmin(){
       +'<div class="field"><label>Morada</label><input type="text" id="sAd" value="'+esc(settings.address)+'"></div>'
       +'<div class="field-row"><div class="field"><label>Preço por unidade impressa (MT)</label><input type="number" id="sPp" value="'+settings.printPrice+'"></div>'
       +'<div class="field"><label>Quantidade mínima (impresso)</label><input type="number" id="sMq" value="'+settings.minQty+'"></div></div>'
+      +'<div class="field"><label>Prazo mínimo — dias antes do casamento</label><input type="number" id="sDl" value="'+settings.deadlineDays+'"></div>'
       +'<div class="row"><button class="btn-dark" onclick="saveSettings()">Guardar definições</button></div></div>';
   }
   body.innerHTML=h;
 }
-function designEdit(id,field,val){const d=designs.find(x=>x.id===id);if(!d)return;d[field]=val;store.set('designs',designs);renderDesignOpts();calcTotal();toast('Modelo atualizado.')}
+function designEdit(id,field,val){const d=designs.find(x=>x.id===id);if(!d)return;d[field]=val;store.set('designs',designs);renderDesignOpts();calcTotal();syncDeadline();toast('Modelo atualizado.')}
+function newDesign(){
+  const id='modelo'+Date.now().toString(36);
+  designs.push({id,name:'Novo modelo',desc:'Descreve aqui o modelo',price:2500,photo:''});
+  selDesign=id;store.set('designs',designs);renderAdmin();renderDesignOpts();calcTotal();syncDeadline();toast('Modelo novo criado — edita o nome, o preço e a foto.');
+}
+function delDesign(id){
+  if(designs.length<=1){toast('Tem de ficar pelo menos um modelo.');return}
+  if(!confirm('Apagar este modelo?'))return;
+  designs=designs.filter(x=>x.id!==id);
+  if(selDesign===id)selDesign=designs[0].id;
+  store.set('designs',designs);renderAdmin();renderDesignOpts();calcTotal();syncDeadline();toast('Modelo apagado.');
+}
+function syncDeadline(){const e=$('#deadlineNote');if(e)e.textContent=settings.deadlineDays+' dias antes do casamento'}
 function designPhoto(id,inp){
   const f=inp.files&&inp.files[0];if(!f)return;
   if(f.size>3*1024*1024){toast('Foto demasiado grande (máx. 3 MB).');return}
@@ -920,7 +938,8 @@ function saveSettings(){
   settings.address=$('#sAd').value.trim()||settings.address;
   settings.printPrice=parseInt($('#sPp').value||'180',10)||180;
   settings.minQty=parseInt($('#sMq').value||'50',10)||50;
-  store.set('settings',settings);calcTotal();toast('Definições guardadas.');
+  settings.deadlineDays=parseInt($('#sDl').value||'30',10)||30;
+  store.set('settings',settings);calcTotal();syncDeadline();toast('Definições guardadas.');
 }
 function markPaid(id){
   const o=orders.find(x=>x.id===id);if(!o)return;
@@ -937,7 +956,7 @@ function markUnpaid(id){
 function toggleMenu(open){const m=document.getElementById('mmenu');if(m)m.classList.toggle('on',open);document.body.style.overflow=open?'hidden':''}
 
 /* ---------- arranque ---------- */
-renderDesignOpts();calcTotal();
+renderDesignOpts();calcTotal();syncDeadline();
 if(me()){const u=me();$('#fName').value=u.name||'';$('#fEmail').value=u.email||''}
 if(location.hash==='#conta')go('conta');
 else if(location.hash==='#admin')go('admin');
