@@ -7,14 +7,14 @@
 <meta name="description" content="SIM — Atelier de convites de casamento em Maputo. Convites digitais e impressos, feitos à mão. Bom papel, boa caligrafia, boa fortuna.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Stack+Sans+Notch:wght@300;400;500&family=Stack+Sans+Headline:wght@200;300;400;500;600;700&family=Stack+Sans+Text:wght@300&family=Italianno:wght@400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Stack+Sans+Headline:wght@200;300;400;500;600;700&family=Stack+Sans+Text:wght@300&family=Italianno:wght@400&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#fafafa; --panel:#f5f5f5; --panel2:#f2f2f2; --panel3:#f7f7f7;
   --ink:#333333; --ink2:#4D4D4D; --mut:#999999; --dark:#1a1a1a;
   --line:#E6E6E6; --line2:#EBEBEB; --lineD:#666666; --pale:#EDEDED;
   --btnL:#EBEBEB; --btnD:#2B2B2B; --coal:#333333;
-  --serif-d:'Stack Sans Notch',sans-serif; --sans-h:'Stack Sans Headline',sans-serif;
+  --serif-d:'Stack Sans Headline',sans-serif; --sans-h:'Stack Sans Headline',sans-serif;
   --sans-t:'Stack Sans Text',sans-serif; --script:'Italianno',cursive;
 }
 *{margin:0;padding:0;box-sizing:border-box}
@@ -212,7 +212,7 @@ main{padding-top:0}
 .opt .p{font-family:var(--sans-h);font-weight:500;font-size:15px;white-space:nowrap}
 .field{margin-top:16px}
 .field label{display:block;font-family:var(--sans-h);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin-bottom:8px}
-.field input[type=text],.field input[type=email],.field input[type=tel],.field input[type=date],.field input[type=number],.field textarea,.field select{
+.field input[type=text],.field input[type=email],.field input[type=tel],.field input[type=date],.field input[type=number],.field input[type=password],.field textarea,.field select{
   width:100%;background:var(--panel);border:0;min-height:56px;padding:14px 16px;outline:none}
 .field input:focus,.field textarea:focus,.field select:focus{background:#eee}
 .field textarea{min-height:120px;resize:vertical}
@@ -298,23 +298,23 @@ main{padding-top:0}
 
 <header class="site">
   <nav>
-    <a class="pill" href="#mensagem">Mensagem <span class="arr">↘</span></a>
-    <a class="pill" href="#informacao">Informação <span class="arr">↘</span></a>
-    <a class="pill dark" href="#pedido">O teu pedido <span class="arr">↘</span></a>
+    <a class="pill" href="#mensagem" onclick="goAnchor('mensagem');return false">Mensagem <span class="arr">↘</span></a>
+    <a class="pill" href="#informacao" onclick="goAnchor('informacao');return false">Informação <span class="arr">↘</span></a>
+    <a class="pill dark" href="#pedido" onclick="goAnchor('pedido');return false">O teu pedido <span class="arr">↘</span></a>
   </nav>
   <button class="menu-btn" onclick="toggleMenu(true)" aria-label="Abrir menu"><span>MENU</span><span class="burger"><i></i><i></i><i></i></span></button>
 </header>
 <div class="mmenu" id="mmenu">
   <button class="mmenu-close" onclick="toggleMenu(false)" aria-label="Fechar menu">✕</button>
-  <a href="#mensagem" onclick="toggleMenu(false)">Mensagem</a>
-  <a href="#informacao" onclick="toggleMenu(false)">Informação</a>
-  <a href="#pedido" onclick="toggleMenu(false)">O teu pedido</a>
+  <a href="#mensagem" onclick="goAnchor('mensagem');return false">Mensagem</a>
+  <a href="#informacao" onclick="goAnchor('informacao');return false">Informação</a>
+  <a href="#pedido" onclick="goAnchor('pedido');return false">O teu pedido</a>
   <a class="small" href="#" onclick="toggleMenu(false);go('conta');return false">Conta</a>
 </div>
 
 <main id="view-home">
   <!-- HERO -->
-  <section class="hero fadein">
+  <section class="hero">
     <div class="wrap hero-topwrap">
       <div class="hero-top">
         <div class="hero-title">
@@ -778,23 +778,30 @@ function toggleAuth(){
   $('#aName').closest('.field').style.display=authMode==='signup'?'block':'none';
   $('#accToggle').textContent=authMode==='signup'?'Já tenho conta — entrar':'Ainda não tenho conta — criar';
   $('#accTitle').textContent=authMode==='signup'?'A tua conta':'Entrar';
+  syncAccSub();
+}
+function syncAccSub(){
+  const e=$('#accSub');if(!e)return;
+  if(me()){e.textContent='A tua conta está ativa — podes pedir o teu convite e falar connosco no chat.';return}
+  e.textContent=authMode==='signup'?'Cria a tua conta para pedires o teu convite e falares connosco no chat.':'Entra com o teu email e a tua palavra-passe.';
 }
 function renderAccount(){
   const u=me();const box=$('#accLogged');const form=$('#accForm');
   if(u){
     box.style.display='block';form.style.display='none';
     $('#accToggle').style.display='none';
+    syncAccSub();
     const g=$('#gateBox');if(g)g.style.display='none';
     // o formulário fica com os dados de quem está com a sessão iniciada
     const fn=$('#fName'),fe=$('#fEmail');
     if(fn&&u.name)fn.value=u.name;
     if(fe&&u.email)fe.value=u.email;
-    box.innerHTML='<p>Olá, <b>'+esc(u.name)+'</b> ('+esc(u.email)+')'+(u.admin?' · <span class="badge paid">Gerência</span>':'')+'</p>'
+    box.innerHTML='<p>Olá,&nbsp;<b>'+esc(u.name)+'</b> ('+esc(u.email)+')'+(u.admin?' · <span class="badge paid">Gerência</span>':'')+'</p>'
       +'<div class="row" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">'
       +'<button class="btn-dark" onclick="openChat()">Abrir o chat</button>'
       +(u.admin?'<button class="btn-light" onclick="go(\'admin\')">Gerência</button>':'')
       +'<button class="btn-ghost" onclick="logout()">Sair</button></div>';
-  }else{box.style.display='none';form.style.display='block';$('#accToggle').style.display='inline'}
+  }else{box.style.display='none';form.style.display='block';$('#accToggle').style.display='inline';syncAccSub()}
 }
 async function doAuth(ev){
   ev.preventDefault();
@@ -814,7 +821,14 @@ async function doAuth(ev){
   }
   renderAccount();return false;
 }
-function logout(){session=null;store.set('session',null);renderAccount();toast('Sessão terminada.')}
+function logout(){
+  session=null;store.set('session',null);
+  // limpar os formulários — nada do utilizador anterior fica visível
+  ['fName','fEmail','fPartner','fPhone','fMsg','fNotes','fDate','aName','aEmail','aPass'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});
+  photoData=null;const pn=$('#photoName');if(pn)pn.textContent='';
+  const rb=$('#receiptBox');if(rb)rb.innerHTML='';
+  calcTotal();renderAccount();toast('Sessão terminada.');
+}
 
 /* ---------- chat ---------- */
 let chatPeer=null; // email do cliente quando a gerência vê as conversas
@@ -954,6 +968,7 @@ function markUnpaid(id){
 
 /* ---------- menu móvel ---------- */
 function toggleMenu(open){const m=document.getElementById('mmenu');if(m)m.classList.toggle('on',open);document.body.style.overflow=open?'hidden':''}
+function goAnchor(id){toggleMenu(false);go('home');setTimeout(()=>{const e=document.getElementById(id);if(e)e.scrollIntoView({behavior:'smooth'})},80)}
 
 /* ---------- arranque ---------- */
 renderDesignOpts();calcTotal();syncDeadline();
