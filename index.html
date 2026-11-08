@@ -19,6 +19,7 @@
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
+html,body{overflow-x:hidden}
 body{background:var(--bg);color:var(--ink);font-family:var(--sans-t);font-weight:300;font-size:16px;line-height:1.8;-webkit-font-smoothing:antialiased}
 img{display:block;max-width:100%}
 a{color:inherit;text-decoration:none}
@@ -29,13 +30,21 @@ input,select,textarea{font-family:var(--sans-t);font-weight:300;font-size:16px;c
 /* ---------- header: 3 pills, fixed, transparent (como o modelo) ---------- */
 header.site{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;justify-content:flex-end;padding:14px 18px;pointer-events:none}
 header.site nav{display:flex;gap:8px;pointer-events:auto}
+.menu-btn{display:none;align-items:center;gap:12px;background:none;border:0;pointer-events:auto;font-family:var(--sans-h);font-weight:500;font-size:15px;letter-spacing:.14em;text-transform:uppercase;text-decoration:underline;text-underline-offset:4px;color:var(--ink)}
+.menu-btn .burger{width:44px;height:44px;background:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+.menu-btn .burger i{display:block;width:20px;height:2px;background:#fff}
+.mmenu{position:fixed;inset:0;z-index:100;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.mmenu.on{display:flex}
+.mmenu a{font-family:var(--serif-d);font-weight:500;font-size:44px;line-height:1.25}
+.mmenu a.small{font-family:var(--sans-h);font-weight:500;font-size:15px;letter-spacing:.14em;text-transform:uppercase;margin-top:20px}
+.mmenu-close{position:absolute;top:14px;right:14px;width:44px;height:44px;background:var(--ink);color:#fff;border:0;font-size:18px}
 .pill{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 16px;border:0;border-radius:5px;
   font-family:var(--sans-h);font-weight:500;font-size:13px;letter-spacing:.08em;text-transform:uppercase;
   background:var(--btnL);color:var(--ink);transition:opacity .2s}
 .pill.dark{background:var(--btnD);color:#fff}
 .pill:hover{opacity:.75}
 .pill .arr{font-size:14px;line-height:1}
-@media(max-width:640px){.pill{height:32px;padding:0 11px;font-size:11px;letter-spacing:.05em}header.site{padding:10px 10px}}
+@media(max-width:640px){header.site nav{display:none}header.site{padding:10px 12px}.menu-btn{display:flex}}
 
 main{padding-top:0}
 .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
@@ -43,15 +52,18 @@ main{padding-top:0}
 @media(max-width:720px){.sec{padding:64px 0}.wrap{padding:0 18px}}
 
 /* ---------- hero ---------- */
-.hero{padding:120px 0 0;overflow:hidden}
-.hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:start}
-.hero h1{font-family:var(--serif-d);font-weight:400;line-height:1;font-size:clamp(72px,11vw,150px);letter-spacing:-.01em}
+.hero{padding:120px 0 0;overflow:hidden;display:flex;flex-direction:column}
+.hero-topwrap{order:1}
+.hero-datewrap{order:2}
+.hero-big{order:3}
+.hero-top{display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:start}
+.hero h1{font-family:var(--serif-d);font-weight:400;line-height:1;font-size:clamp(46px,12.5vw,150px);letter-spacing:-.01em;overflow-wrap:break-word}
 .hero h1 b{font-weight:500}
 .hero h1 .light{font-weight:300}
 .hero-sub{margin-top:18px;font-family:var(--sans-h);font-size:15px;letter-spacing:.06em;color:var(--ink2)}
 .hero-sub small{display:block;margin-top:6px;font-size:13px;color:var(--mut);letter-spacing:.1em;text-transform:uppercase}
 .hero-date{margin-top:44px;text-align:center}
-.hero-date .d{font-family:var(--sans-h);font-weight:600;font-size:clamp(40px,5vw,64px);line-height:1}
+.hero-date .d{font-family:var(--sans-h);font-weight:600;font-size:clamp(30px,6vw,64px);line-height:1.15;overflow-wrap:break-word}
 .hero-date .dow{font-size:15px;color:var(--mut);letter-spacing:.12em}
 .hero-rule{height:1px;background:var(--line);margin:18px auto;max-width:420px}
 .hero-theme{font-family:var(--sans-h);font-size:17px;letter-spacing:.04em;text-align:center}
@@ -70,7 +82,10 @@ main{padding-top:0}
 .hero-share .s1{font-family:var(--sans-h);font-size:15px;letter-spacing:.14em;text-transform:uppercase}
 .hero-share .s2{font-family:var(--script);font-size:clamp(40px,5vw,64px);line-height:1}
 @media(max-width:860px){
-  .hero-grid{grid-template-columns:1fr;gap:28px}
+  .hero-top{display:flex;flex-direction:column;gap:28px}
+  .hero-photos{order:-1}
+  .hero-datewrap{order:3}
+  .hero-big{order:2;margin-top:40px}
   .hero-photos .small{left:12px;bottom:12px;width:38%}
   .hero-vert{display:none}
   .hero-big img{aspect-ratio:4/3}
@@ -287,23 +302,38 @@ main{padding-top:0}
     <a class="pill" href="#informacao">Informação <span class="arr">↘</span></a>
     <a class="pill dark" href="#pedido">O teu pedido <span class="arr">↘</span></a>
   </nav>
+  <button class="menu-btn" onclick="toggleMenu(true)" aria-label="Abrir menu"><span>MENU</span><span class="burger"><i></i><i></i><i></i></span></button>
 </header>
+<div class="mmenu" id="mmenu">
+  <button class="mmenu-close" onclick="toggleMenu(false)" aria-label="Fechar menu">✕</button>
+  <a href="#mensagem" onclick="toggleMenu(false)">Mensagem</a>
+  <a href="#informacao" onclick="toggleMenu(false)">Informação</a>
+  <a href="#pedido" onclick="toggleMenu(false)">O teu pedido</a>
+  <a class="small" href="#" onclick="toggleMenu(false);go('conta');return false">Conta</a>
+</div>
 
 <main id="view-home">
   <!-- HERO -->
   <section class="hero fadein">
-    <div class="wrap">
-      <div class="hero-grid">
-        <div>
+    <div class="wrap hero-topwrap">
+      <div class="hero-top">
+        <div class="hero-title">
           <h1><b>Convites</b><br><span class="light">de casamento</span></h1>
           <p class="hero-sub">SIM · Atelier de convites — Maputo<small>Convites digitais e impressos, feitos à mão</small></p>
         </div>
         <div class="hero-photos">
           <span class="hero-vert">Tema do atelier</span>
-          <img class="main" id="heroMain" src="https://images.pexels.com/photos/34100932/pexels-photo-34100932.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="Noiva e noivo">
+          <img class="main" id="heroMain" src="https://images.pexels.com/photos/30208846/pexels-photo-30208846.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="Noiva e noivo">
           <img class="small" src="https://images.pexels.com/photos/36237526/pexels-photo-36237526.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="Mãos com alianças">
         </div>
       </div>
+    </div>
+    <div class="hero-big">
+      <svg class="curve" viewBox="0 0 100 60" preserveAspectRatio="none" aria-hidden="true"><path d="M0,0 H100 V18 Q50,72 0,18 Z" fill="#fafafa"/></svg>
+      <img src="https://images.pexels.com/photos/32694832/pexels-photo-32694832.jpeg?auto=compress&cs=tinysrgb&w=1600" alt="Casal nas escadarias">
+      <div class="hero-share"><div class="s1">Partilhar</div><div class="s2">O Sim</div></div>
+    </div>
+    <div class="wrap hero-datewrap">
       <div class="hero-date">
         <div class="d">Encomendas abertas · 2026</div>
         <div class="dow">Maputo — Polana</div>
@@ -311,11 +341,6 @@ main{padding-top:0}
         <p class="hero-theme">“Bom papel” &amp; “Boa fortuna”</p>
         <p class="hero-at"><a href="#pedido">SIM</a><span>atelier de convites</span></p>
       </div>
-    </div>
-    <div class="hero-big">
-      <svg class="curve" viewBox="0 0 100 60" preserveAspectRatio="none" aria-hidden="true"><path d="M0,0 H100 V18 Q50,72 0,18 Z" fill="#fafafa"/></svg>
-      <img src="https://images.pexels.com/photos/32694832/pexels-photo-32694832.jpeg?auto=compress&cs=tinysrgb&w=1600" alt="Casal nas escadarias">
-      <div class="hero-share"><div class="s1">Partilhar</div><div class="s2">O Sim</div></div>
     </div>
   </section>
 
@@ -907,6 +932,9 @@ function markUnpaid(id){
   const o=orders.find(x=>x.id===id);if(!o)return;
   o.status='aguarda pagamento';store.set('orders',orders);renderAdmin();toast('Pedido '+id+' voltou a aguardar pagamento.');
 }
+
+/* ---------- menu móvel ---------- */
+function toggleMenu(open){const m=document.getElementById('mmenu');if(m)m.classList.toggle('on',open);document.body.style.overflow=open?'hidden':''}
 
 /* ---------- arranque ---------- */
 renderDesignOpts();calcTotal();
